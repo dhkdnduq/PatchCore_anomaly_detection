@@ -31,10 +31,17 @@ module_wideresnet_50_->to(at::kCUDA);
 
 
 ### 3.Use all data for heatmap  
-*We can see the difference between NG and GOOD.
+*We can see the difference between NG and GOOD.  
+![image](https://user-images.githubusercontent.com/17777591/130405811-7d29432f-5be2-4c5b-a324-d95f526bb725.png)
+![image](https://user-images.githubusercontent.com/17777591/130405756-371c582f-6c8c-4f46-bc6d-5e572b9a1ccc.png)
+ 
+
+
 
 ### 4.Using ROC Curve for best threshold detection
-*Find the threshold value with the mean value of the anomaly map.
+*Find the threshold value with the mean value of the anomaly map.  
+![image](https://user-images.githubusercontent.com/17777591/130405911-2c6077d0-80d8-41ba-914f-9683f0ac926f.png)
+
 
 # PatchCore anomaly detection
 Unofficial implementation of PatchCore(new SOTA) anomaly detection model
