@@ -1,7 +1,7 @@
 # It's a branch for industry
 *The changes are as follows:  
 
-### 1.Use a ng,good instead of gt
+### 1.Use a ng instead of gt
 ~~~
 ├── test
 │   ├── good
