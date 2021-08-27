@@ -1,13 +1,13 @@
-# It's a branch for personal backup
+# It's a branch for industry
 *The changes are as follows:  
 
-### 1.Don't use GT 
+### 1.Use a ng,good instead of gt
 ~~~
 ├── test
 │   ├── good
 │   └── ng
 ├── train
-│   ├── good  
+    └── good  
 
 ~~~
 
