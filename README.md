@@ -21,12 +21,28 @@ patchcore_features.pt
 patchcore_model.pt 
 
 *You can use c++ as follows.
+*vision::models::WideResNet50_2 module_wideresnet_50_
+*https://github.com/pytorch/vision
 auto anomaly_features = torch::jit::load("patchcore_features.pt");
 anomaly_features.attr("feature").toTensor().to(at::kCUDA);
- 
+
 torch::load(module_wideresnet_50_, "patchcore_model.pt");
 module_wideresnet_50_->eval();
 module_wideresnet_50_->to(at::kCUDA);
+
+auto inputs = get_inputs();//image tensor
+auto x = module_wideresnet_50_->conv1->forward(inputs);
+x = module_wideresnet_50_->bn1->forward(x).relu_();
+x = torch::max_pool2d(x, 3, 2, 1);
+
+*instead of register_forward_hook
+auto outputs1 = module_wideresnet_50_->layer1->forward(x);
+auto outputs2 = module_wideresnet_50_->layer2->forward(outputs1);
+auto outputs3 = module_wideresnet_50_->layer3->forward(outputs2);
+
+Next, port the python code to c++.
+...
+
 ~~~
 
 
