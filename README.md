@@ -21,8 +21,9 @@ patchcore_features.pt
 patchcore_model.pt 
 
 *You can use c++ as follows.
+*https://github.com/pytorch/vision
 
-vision::models::WideResNet50_2 module_wideresnet_50_;//https://github.com/pytorch/vision
+vision::models::WideResNet50_2 module_wideresnet_50_;
 auto anomaly_features = torch::jit::load("patchcore_features.pt");
 anomaly_features.attr("feature").toTensor().to(at::kCUDA);
 
