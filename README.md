@@ -40,7 +40,13 @@ auto outputs1 = module_wideresnet_50_->layer1->forward(x);
 auto outputs2 = module_wideresnet_50_->layer2->forward(outputs1);
 auto outputs3 = module_wideresnet_50_->layer3->forward(outputs2);
 
-Next, port the python code to c++.
+auto m = AvgPool2d(AvgPool2dOptions(3).stride(1).padding(1));
+auto embed1 = m(outputs2);
+auto embed2 = m(outputs3);
+
+auto embedding_vectors = embedding_concat(embed1, embed2);
+
+Continue to implement using libtorch.
 ...
 
 ~~~
