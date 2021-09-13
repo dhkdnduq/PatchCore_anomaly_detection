@@ -3,6 +3,7 @@
 
 ### 1.Use a ng instead of gt
 ~~~
+class
 ├── test
 │   ├── good
 │   └── ng
