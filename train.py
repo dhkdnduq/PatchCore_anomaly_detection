@@ -344,7 +344,7 @@ class STPM(pl.LightningModule):
 
         
     def training_step(self, batch, batch_idx): # save locally aware patch features
-        x, _, _, file_name, _ = batch
+        x, _, file_name, _ = batch
         features = self(x)
         embeddings = []
         for feature in features:
