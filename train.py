@@ -388,7 +388,9 @@ class STPM(pl.LightningModule):
         knn = KNN(torch.from_numpy(self.embedding_coreset).cuda(),k=9)
         score_patches = knn(torch.from_numpy(embedding_test).cuda())[0].cpu().detach().numpy()
         self.img_path_list.extend(file_name)
-        anomaly_map = score_patches[:, 0].reshape((28, 28))
+        # support multi input size 
+        block_size = int(np.sqrt(len(score_patches)))
+        anomaly_map = score_patches[:, 0].reshape((block_size, block_size))
         self.all_scores.append(anomaly_map)
         self.image_batch_list.append(x)
         self.x_type_list.append(x_type)
