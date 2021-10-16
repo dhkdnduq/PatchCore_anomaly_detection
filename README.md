@@ -45,8 +45,20 @@ auto embed1 = m(outputs2);
 auto embed2 = m(outputs3);
 
 auto embedding_vectors = embedding_concat(embed1, embed2);
+embedding_vectors.squeeze_();
+embedding_vectors = embedding_vectors.reshape(
+   {embedding_vectors.size(0),
+    embedding_vectors.size(1) * embedding_vectors.size(2)});
+embedding_vectors = embedding_vectors.permute({1, 0});
 
-Continue to implement using libtorch.
+int p = 2;
+int k = 9;
+auto dist = torch::pow(
+   distance_matix(embedding_vectors, anomaly_feature_patchcore[category], p), (1 / (float)p));
+auto knn = std::get<0>(dist.topk(k, -1, false));
+int block_size =static_cast<int>(std::sqrt(knn.size(0)));
+auto anomaly_map = knn.index({Slice(None, None), 0}).reshape({block_size, block_size});
+       
 ...
 
 ~~~
