@@ -380,10 +380,7 @@ class STPM(pl.LightningModule):
             embeddings.append(m(feature))
         embedding_ = embedding_concat(embeddings[0], embeddings[1])
         embedding_test = np.array(reshape_embedding(np.array(embedding_)))
-        embedding_.squeeze_()
-        embedding_ = embedding_.reshape(embedding_.size(0),embedding_.size(1) * embedding_.size(2))
-        embedding_ = embedding_.permute(1,0)
-
+   
         # NN
         knn = KNN(torch.from_numpy(self.embedding_coreset).cuda(),k=9)
         score_patches = knn(torch.from_numpy(embedding_test).cuda())[0].cpu().detach().numpy()
