@@ -361,7 +361,7 @@ class STPM(pl.LightningModule):
         self.randomprojector.fit(total_embeddings)
         # Coreset Subsampling
         selector = kCenterGreedy(total_embeddings,0,0)
-        selected_idx = selector.select_batch(model=self.randomprojector, already_selected=[], N=int(total_embeddings.shape[0]*args.coreset_sampling_ratio))
+        selected_idx = selector.select_batch(model=self.randomprojector, already_selected=[], N=int(total_embeddings.shape[0]*float(args.coreset_sampling_ratio)))
         self.embedding_coreset = total_embeddings[selected_idx]
         
         print('initial embedding size : ', total_embeddings.shape)
