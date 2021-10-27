@@ -440,7 +440,14 @@ class STPM(pl.LightningModule):
             input_x = cv2.cvtColor(x.permute(0, 2, 3, 1).cpu().numpy()[0] * 255, cv2.COLOR_BGR2RGB)
             if anomaly_map_resized_blur.shape != input_x.shape:
                 anomaly_map_resized_blur = cv2.resize(anomaly_map_resized_blur, (input_x.shape[0], input_x.shape[1]))
-
+                
+            if  args.anomal_threshold != 0:
+                anomaly_threshold_index = anomaly_map_resized_blur[anomaly_map_resized_blur > args.anomal_threshold]
+                anomaly_map_resized_blur[anomaly_map_resized_blur < args.anomal_threshold] = 0
+                anomaly_threshold_area = anomaly_threshold_index.size
+                anomaly_threshold_area = anomaly_threshold_area / float(anomaly_map_resized_blur.size) * 100.
+                self.all_scores_mean_norm[i] = anomaly_threshold_area
+                
             # anomaly map on image
             heatmap = cvt2heatmap(anomaly_map_resized_blur * 255)
             hm_on_img = heatmap_on_image(heatmap, input_x)
@@ -484,6 +491,7 @@ def get_args():
     parser.add_argument('--save_src_code', default=True)
     parser.add_argument('--save_anomaly_map', default=True)
     parser.add_argument('--n_neighbors', type=int, default=9)
+    parser.add_argument('--anomal_threshold', type=float, default=0)
     args = parser.parse_args()
     return args
 
