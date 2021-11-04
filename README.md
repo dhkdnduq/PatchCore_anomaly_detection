@@ -44,6 +44,28 @@ auto m = AvgPool2d(AvgPool2dOptions(3).stride(1).padding(1));
 auto embed1 = m(outputs2);
 auto embed2 = m(outputs3);
 
+ auto embedding_concat = [](torch::Tensor x, torch::Tensor y) {
+         int64 B1 = x.size(0), C1 = x.size(1), H1 = x.size(2), W1 = x.size(3);
+         int64 B2 = y.size(0), C2 = y.size(1), H2 = y.size(2), W2 = y.size(3);
+         int64 s = H1 / H2;
+
+         x = F::unfold(x, F::UnfoldFuncOptions(s).dilation(1).stride(s));
+         x = x.view({B1, C1, -1, H2, W2});
+         auto z = torch::zeros({B1, C1 + C2, x.size(2), H2, W2});
+         for (int i = 0; i < x.size(2); i++) {
+           auto temp = x.index({Slice(None, None), Slice(None, None), i,
+                                Slice(None, None), Slice(None, None)});
+           z.index({Slice(None, None), Slice(None, None), i, Slice(None, None),
+                    Slice(None, None)}) = torch::cat({temp, y}, 1);
+         }
+
+         z = z.view({B1, -1, H2 * W2});
+         z = F::fold(z, F::FoldFuncOptions({H1, W1}, {s, s}).stride(s))
+                 .to(at::kCUDA);
+
+         return z;
+       };
+ 
 auto embedding_vectors = embedding_concat(embed1, embed2);
 embedding_vectors.squeeze_();
 embedding_vectors = embedding_vectors.reshape(
@@ -58,7 +80,35 @@ auto dist = torch::pow(
 auto knn = std::get<0>(dist.topk(k, -1, false));
 int block_size =static_cast<int>(std::sqrt(knn.size(0)));
 auto anomaly_map = knn.index({Slice(None, None), 0}).reshape({block_size, block_size});
-       
+double max_score = cfg_.vanomaly[category].anomalyMaxScore;
+double min_score = cfg_.vanomaly[category].anomalyMinScore;
+auto scores = (anomaly_map - min_score) / (max_score - min_score);
+
+auto scores_resized =
+   F::interpolate(
+       scores.unsqueeze(0).unsqueeze(0),
+       F::InterpolateFuncOptions()
+           .size(std::vector<int64_t>{cfg_.dnn_height, cfg_.dnn_width})
+           .align_corners(false)
+           .mode(torch::kBilinear))
+       .squeeze()
+       .squeeze();
+
+//after distance_matix, gpu->cpu slows down,maybe libtorch problem
+auto anomaly_mat = tensor2dToMat(scores_resized.to(at::kCPU));
+
+cv::Mat anomaly_colormap, anomaly_mat_resized;
+anomaly_mat.at<float>(0, 0) = 1;
+anomaly_mat.convertTo(anomaly_mat_resized, CV_8UC3, 255.f);
+
+cv::applyColorMap(anomaly_mat_resized, anomaly_colormap, cv::COLORMAP_JET);
+cv::Mat origin_resize_mat;
+cv::resize(anomaly_colormap, origin_resize_mat, {cfg_.dnn_height, cfg_.dnn_width});
+auto origin_mat = get_origin_image_buffers()[batch_idx];
+
+cv::resize(origin_mat, origin_resize_mat, {cfg_.dnn_height, cfg_.dnn_width});
+cv::Mat dst;
+cv::addWeighted(origin_resize_mat, 0.5, anomaly_colormap, 1 - 0.5, 0, dst); 
 ...
 
 ~~~
