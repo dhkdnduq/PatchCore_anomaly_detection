@@ -88,7 +88,7 @@ auto scores_resized =
    F::interpolate(
        scores.unsqueeze(0).unsqueeze(0),
        F::InterpolateFuncOptions()
-           .size(std::vector<int64_t>{cfg_.dnn_height, cfg_.dnn_width})
+           .size(std::vector<int64_t>{cfg_.origin_height, cfg_.origin_width})
            .align_corners(false)
            .mode(torch::kBilinear))
        .squeeze()
@@ -97,18 +97,19 @@ auto scores_resized =
 //after distance_matix, gpu->cpu slows down,maybe libtorch problem
 auto anomaly_mat = tensor2dToMat(scores_resized.to(at::kCPU));
 
-cv::Mat anomaly_colormap, anomaly_mat_resized;
+cv::Mat anomaly_colormap, anomaly_mat_scaled;
 anomaly_mat.at<float>(0, 0) = 1;
-anomaly_mat.convertTo(anomaly_mat_resized, CV_8UC3, 255.f);
+anomaly_mat.convertTo(anomaly_mat_scaled, CV_8UC3, 255.f);
 
-cv::applyColorMap(anomaly_mat_resized, anomaly_colormap, cv::COLORMAP_JET);
-cv::Mat origin_resize_mat;
-cv::resize(anomaly_colormap, origin_resize_mat, {cfg_.dnn_height, cfg_.dnn_width});
+applyColorMap(anomaly_mat_scaled, anomaly_colormap, cv::COLORMAP_JET);
+cv::Mat anomaly_mat_origin_size;
+cv::resize(anomaly_colormap, anomaly_mat_origin_size, {cfg_.origin_height, cfg_.origin_width});
 auto origin_mat = get_origin_image_buffers()[batch_idx];
 
-cv::resize(origin_mat, origin_resize_mat, {cfg_.dnn_height, cfg_.dnn_width});
+cv::resize(origin_mat, anomaly_mat_origin_size, {cfg_.origin_height, cfg_.origin_width});
 cv::Mat dst;
-cv::addWeighted(origin_resize_mat, 0.5, anomaly_colormap, 1 - 0.5, 0, dst); 
+cv::addWeighted(anomaly_mat_origin_size, 0.5, anomaly_colormap, 1 - 0.5, 0, dst);
+
 ...
 
 ~~~
