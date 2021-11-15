@@ -96,7 +96,6 @@ auto scores_resized =
        .squeeze()
        .squeeze();
 
-//after distance_matix, gpu->cpu slows down,maybe libtorch problem
 auto anomaly_mat = tensor2dToMat(scores_resized.to(at::kCPU));
 
 cv::Mat anomaly_colormap, anomaly_mat_scaled;
