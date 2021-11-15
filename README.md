@@ -14,7 +14,7 @@ class
 
 ### 2.Support Libtorch 
 ~~~
-*Two files are saved.
+*Two files are stored after the test.
 # extracted features , Instead of pickle
 patchcore_features.pt 
 
