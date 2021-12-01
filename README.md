@@ -78,7 +78,7 @@ embedding_vectors = embedding_vectors.permute({1, 0});
 
 int p = 2;
 int k = 9;
-auto dist =  torch::cdist(embedding_vectors, anomaly_feature_patchcore[category], p);
+auto dist =  torch::cdist(embedding_vectors, anomaly_features, p);
 auto knn = std::get<0>(dist.topk(k, -1, false));
 int block_size =static_cast<int>(std::sqrt(knn.size(0)));
 auto anomaly_map = knn.index({Slice(None, None), 0}).reshape({block_size, block_size});
