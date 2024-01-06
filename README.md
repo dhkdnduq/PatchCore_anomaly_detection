@@ -119,7 +119,7 @@ cv::addWeighted(anomaly_mat_origin_size, 0.5, anomaly_colormap, 1 - 0.5, 0, dst)
 
 ### 3.Support Faiss 
 ~~~
-Faiss version of the main branch
+If use faiss version of the main branch
 Refer to PatchCore.cpp
 ~~~
 
