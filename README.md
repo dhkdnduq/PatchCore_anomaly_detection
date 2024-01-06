@@ -1,4 +1,6 @@
 # It's a branch for industry
+*The faiss version was added.//2024.01.06
+
 *The changes are as follows:  
 
 ### 1.Use a ng instead of gt
@@ -118,7 +120,7 @@ cv::addWeighted(anomaly_mat_origin_size, 0.5, anomaly_colormap, 1 - 0.5, 0, dst)
 ### 3.Support Faiss 
 ~~~
 Faiss version of the main branch
-Refer to PatchCoreDL.hpp
+Refer to PatchCore.cpp
 ~~~
 
 ### 4.Use all data for heatmap  
