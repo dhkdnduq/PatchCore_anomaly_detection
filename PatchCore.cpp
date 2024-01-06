@@ -155,11 +155,95 @@ public:
     {
         module_->to(devType);
     }
+    at::Tensor PreProcessImage(cv::Mat frame, const cv::Scalar& resize, double scalefactor, const cv::Scalar& mean, const cv::Scalar& std)
+    {
+    	auto input_size = cv::Size(resize[0], resize[1]);
+     
+    	cv::Mat resized;
+    	cv::resize(frame, resized, input_size, 0, 0);
+    	cv::Mat flt_image;
+    	if (frame.channels() == 1)
+    		cv::cvtColor(resized, resized, cv::COLOR_GRAY2BGR);
+    	resized.convertTo(flt_image, CV_32FC3, 1.f / scalefactor);
+    	int channel = flt_image.channels();
+    	// subtract mean
+    	vector<cv::Mat> img_channels;
+    	if (mean.cols != 0 && std.cols != 0) {
+    		cv::Mat subtract, divide;
+    		cv::subtract(flt_image,
+    			cv::Scalar(mean[2], mean[1], mean[0]),
+    			subtract);
+    
+    		cv::split(subtract, img_channels);
+    		cv::divide(img_channels[0], std[2], img_channels[0]);
+    		cv::divide(img_channels[1], std[1], img_channels[1]);
+    		cv::divide(img_channels[2], std[0], img_channels[2]);
+    
+    		cv::merge(img_channels, flt_image);
+    	}
+    	int nChannels = 3;
+    	Mat dmy(resize[1], resize[0], CV_32FC3);
+    	torch::Tensor tensor_img;
+    	tensor_img = torch::from_blob(dmy.data, { dmy.rows, dmy.cols, dmy.channels() }, torch::kFloat);
+    	tensor_img = tensor_img.permute({ 2, 0, 1 });
+    	tensor_img.unsqueeze_(0);
+    	tensor_img = tensor_img.to(at::kCUDA);
+    	return tensor_img;
+    }
 
+    
+at::Tensor EmbeddingConcat(torch::Tensor x, torch::Tensor y) {
+
+	int64 B1 = x.size(0), C1 = x.size(1), H1 = x.size(2), W1 = x.size(3);
+	int64 B2 = y.size(0), C2 = y.size(1), H2 = y.size(2), W2 = y.size(3);
+	int64 s = H1 / H2;
+
+	x = F::unfold(x, F::UnfoldFuncOptions(s).dilation(1).stride(s));
+	x = x.view({ B1, C1, -1, H2, W2 });
+	auto z = torch::zeros({ B1, C1 + C2, x.size(2), H2, W2 });
+	for (int i = 0; i < x.size(2); i++) {
+		// z.index({Slice(None, None, i,None,None)}) = torch::cat(x.index({Slice(None, None, i),y}), 1);
+		auto temp = x.index({ Slice(None, None), Slice(None, None), i, Slice(None, None),Slice(None, None) });
+		z.index({ Slice(None, None), Slice(None, None), i, Slice(None, None),Slice(None, None) }) = torch::cat({ temp,y }, 1);
+	}
+
+	z = z.view({ B1, -1, H2 * W2 });
+	z = F::fold(z, F::FoldFuncOptions({ H1, W1 }, { s, s }).stride(s)).to(at::kCUDA);
+
+	return z;
+}
+
+    
+   cv::Mat Convert2DTensorToMat(torch::Tensor x)
+  {
+    	int H = x.size(0);
+    	int W = x.size(1);
+    	int C = 1;
+    
+    	if (x.sizes().size() > 2)
+    		C = x.size(2);
+    
+    	at::ScalarType type = x.scalar_type();
+    	cv::Mat mat;
+    	if (type == at::ScalarType::Float) {
+    		mat = cv::Mat(H, W, C == 1 ? CV_32FC1 : CV_32FC3);
+    		std::memcpy(mat.data, x.data_ptr(), sizeof(float) * x.numel());
+    	}
+    
+    	else if (type == at::ScalarType::Char) {
+    		mat = cv::Mat(H, W, C == 1 ? CV_8UC1 : CV_8UC3);
+    		std::memcpy(mat.data, x.data_ptr(), sizeof(char) * x.numel());
+    	}
+    	else if (type == at::ScalarType::Bool) {
+    		mat = cv::Mat(H, W, C == 1 ? CV_8UC1 : CV_8UC3);
+    		std::memcpy(mat.data, x.data_ptr(), sizeof(char) * x.numel());
+       }
+       return mat;
+   }
     torch::jit::IValue forward(std::vector<I> vecTensorInputs)
     {
         torch::jit::IValue rst;
-        auto inputs = TorchHelper::PreProcessImages(vecTensorInputs, cv::Scalar(224., 224.), 1., cv::Scalar(0.485, 0.456, 0.406), cv::Scalar(0.229, 0.224, 0.225));
+        auto inputs = PreProcessImages(vecTensorInputs, cv::Scalar(224., 224.), 1., cv::Scalar(0.485, 0.456, 0.406), cv::Scalar(0.229, 0.224, 0.225));
         auto x = module_->conv1->forward(inputs);
 
         x = module_->bn1->forward(x).relu_();
@@ -173,7 +257,7 @@ public:
         auto embed2 = m(outputs3);
 
         try {
-            auto embedded = TorchHelper::EmbeddingConcat(embed1, embed2);
+            auto embedded = EmbeddingConcat(embed1, embed2);
 
             for (int batch_idx = 0; batch_idx < input_batch_size; batch_idx++)
             {
@@ -208,7 +292,7 @@ public:
 
                     torch::cuda::synchronize();
 
-                    auto anomaly_mat = TorchHelper::Convert2DTensorToMat(scores_resized.to(at::kCPU));
+                    auto anomaly_mat = Convert2DTensorToMat(scores_resized.to(at::kCPU));
                     cv::Mat anomaly_colormap, anomaly_mat_scaled;
                     anomaly_mat.at<float>(0, 0) = 1;
                     anomaly_mat.convertTo(anomaly_mat_scaled, CV_8UC3, 255.f);
