@@ -115,8 +115,13 @@ cv::addWeighted(anomaly_mat_origin_size, 0.5, anomaly_colormap, 1 - 0.5, 0, dst)
 
 ~~~
 
+### 3.Support Faiss 
+~~~
+Faiss version of the main branch
+Refer to PatchCoreDL.hpp
+~~~
 
-### 3.Use all data for heatmap  
+### 4.Use all data for heatmap  
 *We can see the difference between NG and GOOD.  
 ![image](https://user-images.githubusercontent.com/17777591/130405811-7d29432f-5be2-4c5b-a324-d95f526bb725.png)
 ![image](https://user-images.githubusercontent.com/17777591/130405756-371c582f-6c8c-4f46-bc6d-5e572b9a1ccc.png)
@@ -124,7 +129,7 @@ cv::addWeighted(anomaly_mat_origin_size, 0.5, anomaly_colormap, 1 - 0.5, 0, dst)
 
 
 
-### 4.Using ROC Curve for best threshold detection
+### 5.Using ROC Curve for best threshold detection
 *Find the threshold value with the mean value of the anomaly map.  
 ![image](https://user-images.githubusercontent.com/17777591/130405911-2c6077d0-80d8-41ba-914f-9683f0ac926f.png)
 
